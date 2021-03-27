@@ -9,7 +9,7 @@ documentation = "https://docs.rs/ssd1681"
 repository = "https://github.com/afajl/ssd1681"
 
 readme = "README.md"
-keywords = ["embedded", "epd", "epaper", "driver", "ssd1681"]
+keywords = ["embedded-hal-driver", "epd", "epaper", "driver", "ssd1681"]
 categories = ["embedded", "no-std"]
 
 license = "MIT OR Apache-2.0"
@@ -25,3 +25,6 @@ linux-embedded-hal = "0.3.0"
 [features]
 default = ["graphics"]
 graphics = ["embedded-graphics"]
+
+[profile.release]
+lto = true

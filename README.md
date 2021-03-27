@@ -9,20 +9,20 @@ controller, for use with [embedded-hal].
 
 ## Description
 
-This driver is written for a [Adafruit 1.54" Tri-Color] display.
+This driver is written for a [Adafruit 1.54" Tri-Color][tricolor] display.
 It will probably work for other displays with the same chip.
 
 It is built using [embedded-hal] and optionally
 [embedded-graphics]. 
 
 ## Examples
-The examples must be built on a Raspberry PI. I use the
+The examples must be built on a Raspberry Pi. Use the
 `run-example.sh` script to copy the sources, compile and run the
-example on Raspberry Pi.
+example.
 
 ## Partial updates
 Partial updates is not supported. There was support initially but
-the driver refreshes the whole screen so there is no gain. 
+the driver refreshes the whole screen so there is no point. 
 
 According to Adafruit it seems to be a [hardware problem].
 
@@ -47,4 +47,5 @@ According to Adafruit it seems to be a [hardware problem].
 [LICENSE-MIT]: https://github.com/wezm/ssd1675/blob/master/LICENSE-MIT
 [SSD1681]: https://www.solomon-systech.com/product/ssd1681
 [hardware problem]: https://forums.adafruit.com/viewtopic.php?f=47&t=146252&p=722909&hilit=partial+update#p722957.
+[tricolor]: https://www.adafruit.com/product/4868 
 
