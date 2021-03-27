@@ -1,7 +1,7 @@
 //! Graphics Support for EPDs
 
 use crate::color::Color;
-use crate::{buffer_len, HEIGHT, WIDTH};
+use crate::{HEIGHT, WIDTH};
 use embedded_graphics::{pixelcolor::BinaryColor, prelude::*};
 
 /// Displayrotation
@@ -114,7 +114,7 @@ impl Display1in54 {
     /// Create a black & white display buffer
     pub fn bw() -> Self {
         Display1in54 {
-            buffer: [Color::White.get_byte_value(); WIDTH as usize * HEIGHT as usize / 8],
+            buffer: [Color::White.get_byte_value(); buffer_len(WIDTH as usize, HEIGHT as usize)],
             rotation: DisplayRotation::default(),
             is_inverted: true,
         }
@@ -123,7 +123,8 @@ impl Display1in54 {
     /// Create a red display buffer
     pub fn red() -> Self {
         Display1in54 {
-            buffer: [Color::White.get_byte_value(); WIDTH as usize * HEIGHT as usize / 8],
+            buffer: [Color::White.inverse().get_byte_value();
+                buffer_len(WIDTH as usize, HEIGHT as usize)],
             rotation: DisplayRotation::default(),
             is_inverted: false,
         }
@@ -161,81 +162,6 @@ impl Display for Display1in54 {
 
     fn rotation(&self) -> DisplayRotation {
         self.rotation
-    }
-}
-
-/// A variable Display without a predefined buffer
-pub struct VarDisplay<'a> {
-    width: u32,
-    height: u32,
-    rotation: DisplayRotation,
-    is_inverted: bool,
-    buffer: &'a mut [u8], //buffer: Box<u8>//[u8; 15000]
-}
-
-impl<'a> VarDisplay<'a> {
-    /// Create a new bw variable sized display.
-    ///
-    /// Buffersize must be at least (width + 7) / 8 * height bytes.
-    pub fn bw(width: u32, height: u32, buffer: &'a mut [u8]) -> VarDisplay<'a> {
-        let len = buffer.len() as u32;
-        assert!(buffer_len(width as usize, height as usize) >= len as usize);
-        VarDisplay {
-            width,
-            height,
-            rotation: DisplayRotation::default(),
-            is_inverted: true,
-            buffer,
-        }
-    }
-
-    /// Create a new red variable sized display.
-    ///
-    /// Buffersize must be at least (width + 7) / 8 * height bytes.
-    pub fn red(width: u32, height: u32, buffer: &'a mut [u8]) -> VarDisplay<'a> {
-        let len = buffer.len() as u32;
-        assert!(buffer_len(width as usize, height as usize) >= len as usize);
-        VarDisplay {
-            width,
-            height,
-            rotation: DisplayRotation::default(),
-            is_inverted: false,
-            buffer,
-        }
-    }
-}
-
-impl<'a> DrawTarget<BinaryColor> for VarDisplay<'a> {
-    type Error = core::convert::Infallible;
-
-    fn draw_pixel(&mut self, pixel: Pixel<BinaryColor>) -> Result<(), Self::Error> {
-        self.draw_helper(self.width, self.height, pixel)
-    }
-
-    fn size(&self) -> Size {
-        Size::new(self.width, self.height)
-    }
-}
-
-impl<'a> Display for VarDisplay<'a> {
-    fn buffer(&self) -> &[u8] {
-        &self.buffer
-    }
-
-    fn get_mut_buffer(&mut self) -> &mut [u8] {
-        self.buffer
-    }
-
-    fn set_rotation(&mut self, rotation: DisplayRotation) {
-        self.rotation = rotation;
-    }
-
-    fn rotation(&self) -> DisplayRotation {
-        self.rotation
-    }
-
-    fn is_inverted(&self) -> bool {
-        self.is_inverted
     }
 }
 
@@ -294,35 +220,38 @@ fn find_position(x: u32, y: u32, width: u32, height: u32, rotation: DisplayRotat
     )
 }
 
+/// Computes the needed buffer length. Takes care of rounding up in case width
+/// is not divisible by 8.
+#[must_use]
+const fn buffer_len(width: usize, height: usize) -> usize {
+    (width + 7) / 8 * height
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{buffer_len, find_position, outside_display, Display, DisplayRotation, VarDisplay};
+    use super::{find_position, outside_display, Display, Display1in54, DisplayRotation};
     use crate::color::Black;
     use crate::color::Color;
     use embedded_graphics::{prelude::*, primitives::Line, style::PrimitiveStyle};
 
     #[test]
     fn buffer_clear() {
-        use crate::epd4in2::{HEIGHT, WIDTH};
-
-        let mut buffer =
-            [Color::Black.get_byte_value(); buffer_len(WIDTH as usize, HEIGHT as usize)];
-        let mut display = VarDisplay::new(WIDTH, HEIGHT, &mut buffer);
+        let mut display = Display1in54::bw();
 
         for &byte in display.buffer.iter() {
-            assert_eq!(byte, Color::Black.get_byte_value());
+            assert_eq!(byte, Color::White.get_byte_value());
         }
 
         display.clear_buffer(Color::White);
 
         for &byte in display.buffer.iter() {
-            assert_eq!(byte, Color::White.get_byte_value());
+            assert_eq!(byte, Color::Black.get_byte_value());
         }
     }
 
     #[test]
     fn rotation_overflow() {
-        use crate::epd4in2::{HEIGHT, WIDTH};
+        use crate::{HEIGHT, WIDTH};
         let width = WIDTH as u32;
         let height = HEIGHT as u32;
         test_rotation_overflow(width, height, DisplayRotation::Rotate0);
@@ -348,12 +277,7 @@ mod tests {
 
     #[test]
     fn graphics_rotation_0() {
-        use crate::epd2in9::DEFAULT_BACKGROUND_COLOR;
-        let width = 128;
-        let height = 296;
-
-        let mut buffer = [DEFAULT_BACKGROUND_COLOR.get_byte_value(); 128 / 8 * 296];
-        let mut display = VarDisplay::new(width, height, &mut buffer);
+        let mut display = Display1in54::bw();
 
         let _ = Line::new(Point::new(0, 0), Point::new(7, 0))
             .into_styled(PrimitiveStyle::with_stroke(Black, 1))
@@ -364,34 +288,7 @@ mod tests {
         assert_eq!(buffer[0], Color::Black.get_byte_value());
 
         for &byte in buffer.iter().skip(1) {
-            assert_eq!(byte, DEFAULT_BACKGROUND_COLOR.get_byte_value());
-        }
-    }
-
-    #[test]
-    fn graphics_rotation_90() {
-        use crate::epd2in9::DEFAULT_BACKGROUND_COLOR;
-        let width = 128;
-        let height = 296;
-
-        let mut buffer = [DEFAULT_BACKGROUND_COLOR.get_byte_value(); 128 / 8 * 296];
-        let mut display = VarDisplay::new(width, height, &mut buffer);
-
-        display.set_rotation(DisplayRotation::Rotate90);
-
-        let _ = Line::new(Point::new(0, 120), Point::new(0, 295))
-            .into_styled(PrimitiveStyle::with_stroke(Black, 1))
-            .draw(&mut display);
-
-        let buffer = display.buffer();
-
-        extern crate std;
-        std::println!("{:?}", buffer);
-
-        assert_eq!(buffer[0], Color::Black.get_byte_value());
-
-        for &byte in buffer.iter().skip(1) {
-            assert_eq!(byte, DEFAULT_BACKGROUND_COLOR.get_byte_value());
+            assert_eq!(byte, Color::White.get_byte_value());
         }
     }
 }

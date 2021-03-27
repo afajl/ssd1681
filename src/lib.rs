@@ -19,7 +19,6 @@
 //! 1. then kick off a display update using [`driver::Ssd1681::update_bw_frame`] or
 //!     [`driver::Ssd1681::update_red_frame`]
 //!
-//! There is also support for partial updates but it updates the whole frame every time.
 //!
 #![no_std]
 #![deny(missing_docs)]
@@ -59,21 +58,6 @@ mod flag {
     pub const BORDER_WAVEFORM_FOLLOW_LUT: u8 = 0b0100;
     pub const BORDER_WAVEFORM_LUT1: u8 = 0b0001;
     pub const DISPLAY_MODE_1: u8 = 0xF7;
-    pub const DISPLAY_MODE_2: u8 = 0xFF;
-}
-
-/// Computes the needed buffer length. Takes care of rounding up in case width
-/// is not divisible by 8.
-///
-///  unused
-///  bits        width
-/// <----><------------------------>
-/// [XXXXX210][76543210]...[76543210] ^
-/// [XXXXX210][76543210]...[76543210] | height
-/// [XXXXX210][76543210]...[76543210] v
-#[must_use]
-pub const fn buffer_len(width: usize, height: usize) -> usize {
-    (width + 7) / 8 * height
 }
 
 /// Maximum display height this driver supports

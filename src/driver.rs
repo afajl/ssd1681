@@ -88,26 +88,6 @@ where
             .cmd_with_data(spi, cmd::WRITE_RED_DATA, &buffer)
     }
 
-    /// Update a part of the Black/White frame on the display driver
-    /// Use [`display_partial_frame`](display_partial_frame) to show the frame
-    pub fn update_partial_bw_frame(
-        &mut self,
-        spi: &mut SPI,
-        buffer: &[u8],
-        x: u32,
-        y: u32,
-        width: u32,
-        height: u32,
-    ) -> Result<(), SPI::Error> {
-        self.interface.wait_until_idle();
-        self.set_ram_area(spi, x, y, x + width, y + height)?;
-        self.set_ram_counter(spi, x, y)?;
-
-        self.interface
-            .cmd_with_data(spi, cmd::WRITE_BW_DATA, buffer)?;
-        Ok(())
-    }
-
     /// Start an update of the whole display
     pub fn display_frame(&mut self, spi: &mut SPI) -> Result<(), SPI::Error> {
         self.interface
@@ -119,25 +99,11 @@ where
         Ok(())
     }
 
-    /// Start an update of a part of the display
-    ///
-    /// NOTE: This currently does not work, the whole display gets refreshed.  
-    pub fn display_partial_frame(&mut self, spi: &mut SPI) -> Result<(), SPI::Error> {
-        self.interface.wait_until_idle();
-
-        self.interface
-            .cmd_with_data(spi, cmd::UPDATE_DISPLAY_CTRL2, &[flag::DISPLAY_MODE_2])?;
-        self.interface.cmd(spi, cmd::MASTER_ACTIVATE)?;
-
-        self.interface.wait_until_idle();
-
-        Ok(())
-    }
-
     /// Make the whole black and white frame on the display driver white
     pub fn clear_bw_frame(&mut self, spi: &mut SPI) -> Result<(), SPI::Error> {
         self.use_full_frame(spi)?;
 
+        // TODO: allow non-white background color
         let color = color::Color::White.get_byte_value();
 
         self.interface.cmd(spi, cmd::WRITE_BW_DATA)?;
@@ -150,8 +116,7 @@ where
     pub fn clear_red_frame(&mut self, spi: &mut SPI) -> Result<(), SPI::Error> {
         self.use_full_frame(spi)?;
 
-        // TODO: clear the ram with the background color
-        //let color = self.background_color.get_byte_value();
+        // TODO: allow non-white background color
         let color = color::Color::White.inverse().get_byte_value();
 
         self.interface.cmd(spi, cmd::WRITE_RED_DATA)?;
@@ -179,15 +144,12 @@ where
         assert!(start_x < end_x);
         assert!(start_y < end_y);
 
-        // x is positioned in bytes, so the last 3 bits which show the position inside a byte in the ram
-        // aren't relevant
         self.interface.cmd_with_data(
             spi,
             cmd::SET_RAMXPOS,
             &[(start_x >> 3) as u8, (end_x >> 3) as u8],
         )?;
 
-        // 2 Databytes: A[7:0] & 0..A[8] for each - start and end
         self.interface.cmd_with_data(
             spi,
             cmd::SET_RAMYPOS,

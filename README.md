@@ -21,9 +21,8 @@ The examples must be built on a Raspberry PI. I use the
 example on Raspberry Pi.
 
 ## Partial updates
-There is support to write and update partial frames on the
-display but the refresh redraws the whole display which takes
-many seconds.
+Partial updates is not supported. There was support initially but
+the driver refreshes the whole screen so there is no gain. 
 
 According to Adafruit it seems to be a [hardware problem].
 

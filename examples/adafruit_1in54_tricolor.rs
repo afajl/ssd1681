@@ -1,10 +1,14 @@
-use embedded_hal::prelude::*;
+#[cfg(not(target_os = "linux"))]
+fn main() {}
+
+#[cfg(target_os = "linux")]
 use linux_embedded_hal::{
     spidev::{SpiModeFlags, SpidevOptions},
     sysfs_gpio::Direction,
     Delay, Pin, Spidev,
 };
 
+#[cfg(target_os = "linux")]
 use embedded_graphics::{
     fonts::{Font6x8, Text},
     prelude::*,
@@ -13,8 +17,10 @@ use embedded_graphics::{
     text_style,
 };
 
-use ssd1681::{buffer_len, color::*, graphics::VarDisplay, prelude::*, WIDTH};
+#[cfg(target_os = "linux")]
+use ssd1681::{color::*, prelude::*, WIDTH};
 
+#[cfg(target_os = "linux")]
 // Activate SPI, GPIO in raspi-config needs to be run with sudo because of some sysfs_gpio
 // permission problems and follow-up timing problems
 // see https://github.com/rust-embedded/rust-sysfs-gpio/issues/5 and follow-up issues
@@ -71,7 +77,8 @@ fn main() -> Result<(), std::io::Error> {
 
     draw_rotation_and_rulers(&mut display_bw);
 
-    Rectangle::new(Point::new(80, 80), Point::new(120, 120))
+    display_bw.set_rotation(DisplayRotation::Rotate0);
+    Rectangle::new(Point::new(60, 60), Point::new(100, 100))
         .into_styled(PrimitiveStyle::with_fill(Black))
         .draw(&mut display_bw)
         .unwrap();
@@ -82,42 +89,22 @@ fn main() -> Result<(), std::io::Error> {
     // Draw red color
     let mut display_red = Display1in54::red();
 
-    Circle::new(Point::new(100, 100), 30)
+    Circle::new(Point::new(100, 100), 20)
         .into_styled(PrimitiveStyle::with_fill(Red))
         .draw(&mut display_red)
         .unwrap();
 
-    println!("Send red frame to display");
+    // println!("Send red frame to display");
     ssd1681.update_red_frame(&mut spi, display_red.buffer())?;
 
     println!("Update display");
     ssd1681.display_frame(&mut spi)?;
 
-    println!("Sleep 5s");
-    delay.delay_ms(5000u16);
-
-    // Draw partial update
-    println!("Create a 40x40 display");
-    let mut buffer = [Color::White.get_byte_value(); buffer_len(40, 40)];
-    let mut display_partial = VarDisplay::bw(40, 40, &mut buffer);
-
-    Rectangle::new(Point::new(0, 0), Point::new(40, 40))
-        .into_styled(PrimitiveStyle::with_fill(Black))
-        .draw(&mut display_partial)
-        .unwrap();
-
-    println!("Send partial frame to display");
-    ssd1681
-        .update_partial_bw_frame(&mut spi, display_partial.buffer(), 90, 90, 40, 40)
-        .unwrap();
-
-    println!("Update display");
-    ssd1681.display_partial_frame(&mut spi).unwrap();
-
     println!("Done");
     Ok(())
 }
 
+#[cfg(target_os = "linux")]
 fn draw_rotation_and_rulers(display: &mut Display1in54) {
     display.set_rotation(DisplayRotation::Rotate0);
     draw_text(display, "rotation 0", 25, 25);
@@ -136,19 +123,24 @@ fn draw_rotation_and_rulers(display: &mut Display1in54) {
     draw_ruler(display);
 }
 
+#[cfg(target_os = "linux")]
 fn draw_ruler(display: &mut Display1in54) {
-    for col in 0..WIDTH {
+    for col in 1..WIDTH {
         if col % 25 == 0 {
             Line::new(Point::new(col as i32, 0), Point::new(col as i32, 10))
                 .into_styled(PrimitiveStyle::with_stroke(Black, 1))
                 .draw(display)
                 .unwrap();
+        }
+
+        if col % 50 == 0 {
             let label = col.to_string();
             draw_text(display, &label, col as i32, 12);
         }
     }
 }
 
+#[cfg(target_os = "linux")]
 fn draw_text(display: &mut Display1in54, text: &str, x: i32, y: i32) {
     let _ = Text::new(text, Point::new(x, y))
         .into_styled(text_style!(

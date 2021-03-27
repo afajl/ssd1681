@@ -9,7 +9,7 @@ documentation = "https://docs.rs/ssd1681"
 repository = "https://github.com/afajl/ssd1681"
 
 readme = "README.md"
-keywords = ["embedded", "epd", "epaper", "display", "ssd1681", "adafruit"]
+keywords = ["embedded", "epd", "epaper", "driver", "ssd1681"]
 categories = ["embedded", "no-std"]
 
 license = "MIT OR Apache-2.0"
@@ -19,6 +19,7 @@ embedded-hal = { version = "0.2.3", features = ["unproven"] }
 embedded-graphics = { version = "0.6.2", optional = true }
 
 [dev-dependencies]
+[target.'cfg(target_os = "linux")'.dependencies]
 linux-embedded-hal = "0.3.0"
 
 [features]
