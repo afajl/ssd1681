@@ -1,13 +1,16 @@
 //! Graphics Support for EPDs
 
+use core::convert::TryFrom;
 use crate::color::Color;
 use crate::{HEIGHT, WIDTH};
 use embedded_graphics::{pixelcolor::BinaryColor, prelude::*};
+use embedded_graphics::primitives::Rectangle;
 
-/// Displayrotation
-#[derive(Clone, Copy)]
+/// DisplayRotation
+#[derive(Clone, Copy, Default)]
 pub enum DisplayRotation {
     /// No rotation
+    #[default]
     Rotate0,
     /// Rotate by 90 degrees clockwise
     Rotate90,
@@ -17,19 +20,13 @@ pub enum DisplayRotation {
     Rotate270,
 }
 
-impl Default for DisplayRotation {
-    fn default() -> Self {
-        DisplayRotation::Rotate0
-    }
-}
-
 /// Necessary traits for all displays to implement for drawing
 ///
 /// Adds support for:
 /// - Drawing (With the help of DrawTarget/Embedded Graphics)
 /// - Rotations
 /// - Clearing
-pub trait Display: DrawTarget<BinaryColor> {
+pub trait Display: DrawTarget {
     /// Clears the buffer of the display with the chosen background color
     fn clear_buffer(&mut self, background_color: Color) {
         let fill_color = if self.is_inverted() {
@@ -131,15 +128,24 @@ impl Display1in54 {
     }
 }
 
-impl DrawTarget<BinaryColor> for Display1in54 {
+impl Dimensions for Display1in54 {
+    fn bounding_box(&self) -> Rectangle {
+        Rectangle::new(Point::new(0, 0), Size::new(WIDTH as u32, HEIGHT as u32))
+    }
+}
+
+impl DrawTarget for Display1in54 {
+    type Color = BinaryColor;
     type Error = core::convert::Infallible;
 
-    fn draw_pixel(&mut self, pixel: Pixel<BinaryColor>) -> Result<(), Self::Error> {
-        self.draw_helper(u32::from(WIDTH), u32::from(HEIGHT), pixel)
-    }
-
-    fn size(&self) -> Size {
-        Size::new(u32::from(WIDTH), u32::from(HEIGHT))
+    fn draw_iter<I>(&mut self, pixels: I) -> Result<(), Self::Error>
+    where
+        I: IntoIterator<Item=Pixel<Self::Color>>
+    {
+        <()>::try_from(for p in pixels.into_iter() {
+            self.draw_helper(WIDTH.into(), HEIGHT.into(), p)?;
+        }).expect("TODO: panic message");
+        Ok(())
     }
 }
 
@@ -156,12 +162,12 @@ impl Display for Display1in54 {
         self.rotation = rotation;
     }
 
-    fn is_inverted(&self) -> bool {
-        self.is_inverted
-    }
-
     fn rotation(&self) -> DisplayRotation {
         self.rotation
+    }
+
+    fn is_inverted(&self) -> bool {
+        self.is_inverted
     }
 }
 
@@ -232,7 +238,8 @@ mod tests {
     use super::{find_position, outside_display, Display, Display1in54, DisplayRotation};
     use crate::color::Black;
     use crate::color::Color;
-    use embedded_graphics::{prelude::*, primitives::Line, style::PrimitiveStyle};
+    use embedded_graphics::{prelude::*, primitives::Line};
+    use embedded_graphics::primitives::PrimitiveStyle;
 
     #[test]
     fn buffer_clear() {

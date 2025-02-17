@@ -15,12 +15,12 @@ categories = ["embedded", "no-std"]
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-embedded-hal = { version = "0.2.3", features = ["unproven"] }
-embedded-graphics = { version = "0.6.2", optional = true }
+embedded-hal = { version = "1.0.0" }
+embedded-graphics = { version = "0.8.1", optional = true }
 
 [dev-dependencies]
 [target.'cfg(target_os = "linux")'.dependencies]
-linux-embedded-hal = "0.3.0"
+linux-embedded-hal = "0.4.0"
 
 [features]
 default = ["graphics"]
