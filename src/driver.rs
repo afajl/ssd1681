@@ -1,11 +1,9 @@
 //! Driver for interacting with SSD1681 display driver
-use core::fmt::Debug;
+use core::fmt::{Debug};
 
-use embedded_hal::{
-    blocking::{delay::DelayMs, spi::Write},
-    digital::v2::{InputPin, OutputPin},
-};
-
+use embedded_hal::delay::DelayNs;
+use embedded_hal::digital::{InputPin, OutputPin};
+use embedded_hal::spi::SpiDevice;
 use crate::interface::DisplayInterface;
 use crate::{cmd, color, flag, HEIGHT, WIDTH};
 
@@ -16,7 +14,7 @@ pub struct Ssd1681<SPI, CS, BUSY, DC, RST> {
 
 impl<SPI, CS, BUSY, DC, RST> Ssd1681<SPI, CS, BUSY, DC, RST>
 where
-    SPI: Write<u8>,
+    SPI: SpiDevice,
     CS: OutputPin,
     CS::Error: Debug,
     BUSY: InputPin,
@@ -26,7 +24,7 @@ where
     RST::Error: Debug,
 {
     /// Create and initialize the display driver
-    pub fn new<DELAY: DelayMs<u8>>(
+    pub fn new<DELAY: DelayNs>(
         spi: &mut SPI,
         cs: CS,
         busy: BUSY,
@@ -44,7 +42,7 @@ where
     }
 
     /// Initialise the controller
-    pub fn init<DELAY: DelayMs<u8>>(
+    pub fn init<DELAY: DelayNs>(
         &mut self,
         spi: &mut SPI,
         delay: &mut DELAY,

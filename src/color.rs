@@ -9,6 +9,7 @@ pub use BinaryColor::Off as White;
 pub use BinaryColor::On as Black;
 #[cfg(feature = "graphics")]
 pub use BinaryColor::On as Red;
+use embedded_graphics::pixelcolor::PixelColor;
 
 /// Black/White colors
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -17,6 +18,10 @@ pub enum Color {
     Black,
     /// White color
     White,
+}
+
+impl PixelColor for Color {
+    type Raw = ();
 }
 
 impl Color {
