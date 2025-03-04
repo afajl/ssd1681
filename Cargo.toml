@@ -1,6 +1,6 @@
 [package]
 name = "ssd1681"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Paul Diaconescu <p@afajl.com>"]
 description = "Driver for the SSD1681 e-Paper display (EPD) controller, for use with embedded-hal"
 edition = "2018"
